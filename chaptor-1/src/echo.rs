@@ -1,28 +1,32 @@
-use std::convert::Infallible;
 use std::net::SocketAddr;
-use hyper::{Body, Request, Response, Server};
+use hyper::{Body, Request, Response, Server, StatusCode};
 use hyper::service::{make_service_fn, service_fn};
 
-#[tokio::main]
-async fn main() {
-    // We'll bind to 127.0.0.1:3000
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+async fn handler(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    println!("{:#?}", req);
+    Ok(Response::new("<html><body>hello</body></html>".into()))
+}
 
-    // A `Service` is needed for every connection, so this
-    // creates one from our `hello_world` function.
-    let make_svc = make_service_fn(|_conn| async {
-        // service_fn converts our function into a `Service`
-        Ok::<_, Infallible>(service_fn(hello_world))
-    });
-
-    let server = Server::bind(&addr).serve(make_svc);
-
-    // Run this server for... forever!
-    if let Err(e) = server.await {
-        eprintln!("server error: {}", e);
+async fn route(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    match req.uri().path() {
+        "/" => handler(req).await,
+        &_ => {
+            let mut not_found = Response::default();
+            *not_found.status_mut() = StatusCode::NOT_FOUND;
+            Ok(not_found)
+        }
     }
 }
 
-async fn hello_world(_req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok(Response::new("Hello, World".into()))
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let make_svc = make_service_fn(|_conn| async {
+        Ok::<_, hyper::Error>(service_fn(route))
+    });
+
+    println!("start http listening :18888");
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], 18888));
+    Server::bind(&addr).serve(make_svc).await?;
+    Ok(())
 }
