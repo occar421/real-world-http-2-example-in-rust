@@ -1,0 +1,13 @@
+[package]
+name = "chaptor-1"
+version = "0.1.0"
+authors = ["MasuqaT <occar@hotmail.co.jp>"]
+edition = "2018"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+warp = { git = "https://github.com/aknuds1/warp.git", branch = "chore/upgrade-tokio" } # Until merge
+
+[[bin]]
+name = "echo"
+path = "src/echo.rs"
