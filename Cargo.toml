@@ -9,6 +9,6 @@ publish = false
 
 [workspace]
 members = [
-    "chaptor-1",
-    "chaptor-3",
+    "chapter-1",
+    "chapter-3",
 ]
