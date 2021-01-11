@@ -1,0 +1,2 @@
+// Dummy
+fn main() {}
