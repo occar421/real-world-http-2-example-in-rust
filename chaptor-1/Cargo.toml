@@ -5,8 +5,8 @@ authors = ["MasuqaT <occar@hotmail.co.jp>"]
 edition = "2018"
 
 [dependencies]
+hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
-warp = { git = "https://github.com/aknuds1/warp.git", branch = "chore/upgrade-tokio" } # Until merge
 
 [[bin]]
 name = "echo"
