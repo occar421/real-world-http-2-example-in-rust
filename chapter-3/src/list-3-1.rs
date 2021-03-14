@@ -7,18 +7,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
     let resp = client.get("http://localhost:18888".parse()?).await?;
 
-    let status = resp.status();
-    let headers = resp.headers().clone();
-    let body = body::to_bytes(resp.into_body()).await?;
+    let (parts, body) = resp.into_parts();
+    let body = body::to_bytes(body).await?;
     println!("{}", std::str::from_utf8(&body)?);
     // 文字列で "200 OK"
-    println!("Status:{}", status);
+    println!("Status:{}", parts.status);
     // 数値で 200
-    println!("StatusCode:{}", status.as_u16());
+    println!("StatusCode:{}", parts.status.as_u16());
     // ヘッダーを出力
-    println!("Headers:{:?}", headers);
+    println!("Headers:{:?}", parts.headers);
     // 特定のヘッダーを取得
-    println!("Content-Length:{:?}", headers["Content-Length"]);
+    println!("Content-Length:{:?}", parts.headers["Content-Length"]);
 
     Ok(())
 }
