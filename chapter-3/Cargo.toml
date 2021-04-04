@@ -6,8 +6,13 @@ edition = "2018"
 
 [dependencies]
 hyper = { version = "0.14", features = ["full"] }
+url = "2.2.1"
 tokio = { version = "1", features = ["full"] }
 
 [[bin]]
 name = "list-3-1"
 path = "src/list-3-1.rs"
+
+[[bin]]
+name = "list-3-4"
+path = "src/list-3-4.rs"
