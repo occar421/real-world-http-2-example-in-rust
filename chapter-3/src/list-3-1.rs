@@ -2,24 +2,22 @@
 //! リスト 3-2: エラーチェックをしないコード
 //! リスト 3-3: ステータスをコンソールに表示する
 
-use hyper::{body, Client};
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = Client::new();
-    let resp = client.get("http://localhost:18888".parse()?).await?;
+    let resp = reqwest::get("http://localhost:18888").await?;
 
-    let (parts, body) = resp.into_parts();
-    let body = body::to_bytes(body).await?;
-    println!("{}", std::str::from_utf8(&body)?);
     // 文字列で "200 OK"
-    println!("Status:{}", parts.status);
+    println!("Status:{}", resp.status());
     // 数値で 200
-    println!("StatusCode:{}", parts.status.as_u16());
+    println!("StatusCode:{}", resp.status().as_u16());
+
     // ヘッダーを出力
-    println!("Headers:{:?}", parts.headers);
+    println!("Headers:{:?}", resp.headers());
     // 特定のヘッダーを取得
-    println!("Content-Length:{:?}", parts.headers["Content-Length"]);
+    println!("Content-Length:{:?}", resp.headers()["Content-Length"]);
+
+    let body = resp.text().await?; // move してしまうので最後に
+    println!("{}", body);
 
     Ok(())
 }
