@@ -16,3 +16,7 @@ path = "src/list-3-1.rs"
 [[bin]]
 name = "list-3-4"
 path = "src/list-3-4.rs"
+
+[[bin]]
+name = "list-3-5"
+path = "src/list-3-5.rs"
