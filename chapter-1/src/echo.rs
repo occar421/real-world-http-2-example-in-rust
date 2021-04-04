@@ -1,50 +1,36 @@
 use env_logger as logger;
-use log;
-use std::convert::Infallible;
-use warp::filters::BoxedFilter;
-use warp::http::HeaderMap;
-use warp::hyper::body;
-use warp::{Filter, Rejection, Reply};
+use hyper::service::{make_service_fn, service_fn};
+use hyper::{Body, Request, Response, Server, StatusCode};
+use std::net::SocketAddr;
 
-fn handler() -> BoxedFilter<(impl Reply,)> {
-    warp::any()
-        .and(warp::body::bytes())
-        .map(|body: body::Bytes| {
-            log::info!("{}", std::str::from_utf8(&body).unwrap());
-            "<html><body>hello</body></html>"
-        })
-        .with(warp::log::custom(|info| {
-            log::info!("{} {} {:?}", info.method(), info.path(), info.version());
-            log::info!("{:#?}", info.request_headers());
-        }))
-        .boxed()
+async fn handler(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    let (parts, body) = req.into_parts();
+    log::info!("{:?}", parts);
+    let body = hyper::body::to_bytes(body).await?;
+    log::info!("Body: {}", std::str::from_utf8(&body).unwrap_or_default());
+    Ok(Response::new("<html><body>hello</body></html>".into()))
+}
+
+async fn route(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+    match req.uri().path() {
+        "/" => handler(req).await,
+        &_ => {
+            let mut not_found = Response::default();
+            *not_found.status_mut() = StatusCode::NOT_FOUND;
+            Ok(not_found)
+        }
+    }
 }
 
 #[tokio::main]
-async fn main() {
-    logger::init();
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    logger::init(); // ログ出力を見るには RUST_LOG=info 等を環境変数で指定すること
+
+    let make_svc = make_service_fn(|_conn| async { Ok::<_, hyper::Error>(service_fn(route)) });
 
     log::info!("start http listening :18888");
 
-    warp::serve(handler()).run(([127, 0, 0, 1], 18888)).await;
-}
-
-fn log_body() -> impl Filter<Extract = (), Error = Rejection> + Copy {
-    warp::body::bytes()
-        .map(|b: body::Bytes| {
-            log::info!("{}", std::str::from_utf8(&body).unwrap());
-        })
-        .untuple_one()
-}
-
-fn log_info() -> impl Filter<Extract = (), Error = Rejection> + Copy {
-    warp::method().and(warp::path::param()).and(warp::query()).map(|method, query| {}).untuple_one()
-}
-
-fn log_headers() -> impl Filter<Extract = (), Error = Infallible> + Copy {
-    warp::header::headers_cloned()
-        .map(|headers: HeaderMap| {
-            log::info!("{:#?}", headers);
-        })
-        .untuple_one()
+    let addr = SocketAddr::from(([127, 0, 0, 1], 18888));
+    Server::bind(&addr).serve(make_svc).await?;
+    Ok(())
 }
