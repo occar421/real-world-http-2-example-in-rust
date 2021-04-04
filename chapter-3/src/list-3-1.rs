@@ -1,6 +1,8 @@
-use hyper::{body, Client};
+//! リスト 3-1: GET メソッドを送信して、レスポンスのボディを画面に出力する
+//! リスト 3-2: エラーチェックをしないコード
+//! リスト 3-3: ステータスをコンソールに表示する
 
-// リスト 3-1 3-2 3-3
+use hyper::{body, Client};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
