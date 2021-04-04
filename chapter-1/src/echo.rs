@@ -1,30 +1,50 @@
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server, StatusCode};
-use std::net::SocketAddr;
+use env_logger as logger;
+use log;
+use std::convert::Infallible;
+use warp::filters::BoxedFilter;
+use warp::http::HeaderMap;
+use warp::hyper::body;
+use warp::{Filter, Rejection, Reply};
 
-async fn handler(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-    println!("{:#?}", req);
-    Ok(Response::new("<html><body>hello</body></html>".into()))
-}
-
-async fn route(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-    match req.uri().path() {
-        "/" => handler(req).await,
-        &_ => {
-            let mut not_found = Response::default();
-            *not_found.status_mut() = StatusCode::NOT_FOUND;
-            Ok(not_found)
-        }
-    }
+fn handler() -> BoxedFilter<(impl Reply,)> {
+    warp::any()
+        .and(warp::body::bytes())
+        .map(|body: body::Bytes| {
+            log::info!("{}", std::str::from_utf8(&body).unwrap());
+            "<html><body>hello</body></html>"
+        })
+        .with(warp::log::custom(|info| {
+            log::info!("{} {} {:?}", info.method(), info.path(), info.version());
+            log::info!("{:#?}", info.request_headers());
+        }))
+        .boxed()
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let make_svc = make_service_fn(|_conn| async { Ok::<_, hyper::Error>(service_fn(route)) });
+async fn main() {
+    logger::init();
 
-    println!("start http listening :18888");
+    log::info!("start http listening :18888");
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 18888));
-    Server::bind(&addr).serve(make_svc).await?;
-    Ok(())
+    warp::serve(handler()).run(([127, 0, 0, 1], 18888)).await;
+}
+
+fn log_body() -> impl Filter<Extract = (), Error = Rejection> + Copy {
+    warp::body::bytes()
+        .map(|b: body::Bytes| {
+            log::info!("{}", std::str::from_utf8(&body).unwrap());
+        })
+        .untuple_one()
+}
+
+fn log_info() -> impl Filter<Extract = (), Error = Rejection> + Copy {
+    warp::method().and(warp::path::param()).and(warp::query()).map(|method, query| {}).untuple_one()
+}
+
+fn log_headers() -> impl Filter<Extract = (), Error = Infallible> + Copy {
+    warp::header::headers_cloned()
+        .map(|headers: HeaderMap| {
+            log::info!("{:#?}", headers);
+        })
+        .untuple_one()
 }
